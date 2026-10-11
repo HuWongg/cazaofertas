@@ -53,17 +53,14 @@ RIP = html_next({"props": {"pageProps": {"findabilityProps": {"data": {
     ]}}]},
 }}}}})
 
-_prod_paris = {
-    "id": "MKBP2R9WS0", "key": "MKBP2R9WS0", "name": "Notebook HP Victus 15-FB3027LA Ryzen 7 16GB 512GB",
-    "slug": "notebook-hp-victus-15-fb3027la-MKBP2R9WS0", "brand": "HP", "sellers": ["HP"],
-    "masterVariant": {"id": "MKBP2R9WS0-1", "sku": "MKBP2R9WS0-1", "prices": {
-        "regular": {"value": {"type": "centPrecision", "centAmount": 1199990, "currencyCode": "CLP", "fractionDigits": 0}},
-        "offer": {"value": {"type": "centPrecision", "centAmount": 999990, "currencyCode": "CLP", "fractionDigits": 0}},
-        "paymentMethod": {"value": {"type": "centPrecision", "centAmount": 949990, "currencyCode": "CLP", "fractionDigits": 0}},
-    }, "images": [{"url": "https://cl-cenco/792x1068/a.jpg"}]},
-}
-_rsc = '5:["$","div",null,{"initialState":{"productData":{"products":[' + json.dumps(_prod_paris, separators=(",", ":")) + ']}}}]'
-PAR = ('<html><script>self.__next_f.push([1,' + json.dumps(_rsc) + '])</script></html>')
+PAR = json.dumps({"response": {"total_num_results": 6439, "results": [{
+    "value": "Notebook HP Victus 15-FB3027LA Ryzen 7 16GB 512GB",
+    "data": {"id": "MKBP2R9WS0", "brand": "HP", "sellers": ["HP"], "displayedPrice": 999990,
+             "discountPercentage": 17, "slug": "notebook-hp-victus-15-fb3027la-MKBP2R9WS0",
+             "url": "https://paris.cl/notebook-hp-victus-15-fb3027la-MKBP2R9WS0.html",
+             "image_url": "https://cl-cenco/792x1068/a.jpg",
+             "groups": [{"display_name": "Notebooks", "group_id": "tecCompNotebooks"}]},
+}]}})
 
 
 def test_parsers():
@@ -73,9 +70,10 @@ def test_parsers():
     r, tot = ripley.parsear(RIP, "notebooks")
     assert tot == 17 and r[0]["precio"] == 1049990 and r[0]["url"].endswith("mpm10003194461")
     assert r[0]["vendedor"] == "HP STORE"
-    p = paris.parsear(PAR, "notebooks")
-    assert p and p[0]["precio"] == 999990 and p[0]["precio_lista"] == 1199990
-    assert p[0]["sku"] == "MKBP2R9WS0" and p[0]["url"].endswith("MKBP2R9WS0.html")
+    p, tot = paris.parsear(PAR, "tecnologia")
+    assert tot == 65 and p[0]["precio"] == 999990 and p[0]["precio_lista"] == 1204810
+    assert p[0]["sku"] == "MKBP2R9WS0" and p[0]["url"].startswith("https://www.paris.cl/")
+    assert p[0]["categoria"] == "notebooks"
     return f, r, p
 
 

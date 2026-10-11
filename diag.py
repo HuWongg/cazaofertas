@@ -26,8 +26,13 @@ def probar(nombre, url, **kw):
                 if isinstance(prods, list):
                     resumen["n"] = len(prods)
                     resumen["total"] = j["data"].get("total")
+                    resumen["offset"] = j["data"].get("offset")
+                    resumen["limit"] = j["data"].get("limit")
                     if prods:
-                        resumen["p0"] = {k: prods[0].get(k) for k in ("sku", "name", "priceNumber", "masterPriceNumber")}
+                        resumen["p0"] = {k: prods[0].get(k) for k in ("sku", "priceNumber")}
+                        resumen["skus"] = [x.get("sku") for x in prods[:4]]
+            if isinstance(j, dict) and j.get("error"):
+                resumen["error"] = str(j.get("error"))[:200]
             if isinstance(j, dict) and isinstance(j.get("products"), list):
                 resumen["n"] = len(j["products"])
                 resumen["total"] = j.get("total")
@@ -53,14 +58,19 @@ except Exception:  # noqa: BLE001
 out["ripley_token"] = bool(tok)
 if tok:
     h = {"x-access-token": tok}
+    c = {"catalog": "note_books"}
     variantes = {
-        "catalog": {"catalog": "note_books"},
-        "catalog_page2": {"catalog": "note_books", "page": 2},
-        "catalogId": {"catalogId": "note_books"},
-        "slug": {"slug": "tecno/computacion/notebooks"},
-        "path": {"path": "/tecno/computacion/notebooks"},
-        "url": {"url": "/tecno/computacion/notebooks"},
-        "categoryPath": {"categoryPath": "tecno/computacion/notebooks"},
+        "base": c,
+        "offset": {**c, "offset": 48},
+        "limit": {**c, "limit": 48},
+        "limit_offset": {**c, "limit": 48, "offset": 48},
+        "from_size": {**c, "from": 48, "size": 48},
+        "pageNumber": {**c, "pageNumber": 2},
+        "p": {**c, "p": 2},
+        "orderBy": {**c, "orderBy": "price_asc"},
+        "sort": {**c, "sort": "price_asc"},
+        "limit100": {**c, "limit": 100},
+        "depto": {"catalog": "tecno"},
     }
     for k, p in variantes.items():
         probar("ripley_cat_" + k, R + "/findability/catalog", params=p, headers=h)

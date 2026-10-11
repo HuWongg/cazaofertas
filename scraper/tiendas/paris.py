@@ -1,110 +1,76 @@
-"""Paris: Next.js con React Server Components.
+"""Paris: usa el mismo buscador que la web de Paris (Constructor.io).
 
-Los productos vienen dentro de los fragmentos `self.__next_f.push([1,"..."])`.
-Cada producto tiene un bloque `"masterVariant":{..."prices":{"regular":...,"offer":...,"paymentMethod":...}}`.
+paris.cl bloquea servidores fuera de Chile, pero su catálogo se sirve desde
+el buscador Constructor.io con una clave pública que la propia web incluye.
+Ventajas: 100 productos por página y orden por "mejor descuento".
 """
 from __future__ import annotations
 
 import json
-import re
+import urllib.parse
 
 from ..http import Bloqueado, Cliente
 
-BASE = "https://www.paris.cl"
-_PUSH = re.compile(r'self\.__next_f\.push\(\[1,"((?:[^"\\]|\\.)*)"\]\)', re.S)
-_MV = '"masterVariant":{'
-_dec = json.JSONDecoder()
+CLAVE = "key_8pjkPsSkEsJHKgxR"  # clave pública del buscador de paris.cl
+API = "https://ac.cnstrc.com/browse/group_id/{grupo}"
+POR_PAGINA = 100
 
 
-def _rsc(html: str) -> str:
-    partes = []
-    for m in _PUSH.finditer(html):
-        try:
-            partes.append(json.loads('"' + m.group(1) + '"'))
-        except json.JSONDecodeError:
-            continue
-    return "".join(partes)
-
-
-def _monto(precios: dict, clave: str) -> int | None:
-    v = (precios.get(clave) or {}).get("value") or {}
-    c = v.get("centAmount")
-    if c is None:
-        return None
-    dig = int(v.get("fractionDigits") or 0)
-    return int(round(c / (10 ** dig)))
-
-
-def _campo_antes(txt: str, desde: int, limite: int, campo: str) -> str | None:
-    i = txt.rfind(f'"{campo}":"', limite, desde)
-    if i < 0:
-        return None
+def _lista(precio: int, desc_pct) -> int | None:
     try:
-        val, _ = _dec.raw_decode(txt, i + len(campo) + 3)
-        return val if isinstance(val, str) else None
-    except json.JSONDecodeError:
+        d = float(desc_pct or 0)
+    except (TypeError, ValueError):
         return None
+    if d <= 0 or d >= 100:
+        return None
+    return int(round(precio / (1 - d / 100) / 10.0) * 10)
 
 
-def parsear(html: str, categoria: str) -> list[dict]:
-    txt = _rsc(html)
-    if _MV not in txt:
-        if "__next_f" not in html:
-            raise Bloqueado("Paris: página sin datos de productos (posible bloqueo)")
-        return []
-    productos, vistos = [], set()
-    pos, anterior = 0, 0
-    while True:
-        i = txt.find(_MV, pos)
-        if i < 0:
-            break
-        pos = i + len(_MV)
-        try:
-            mv, fin = _dec.raw_decode(txt, i + len(_MV) - 1)
-        except json.JSONDecodeError:
+def parsear(txt: str, categoria_defecto: str) -> tuple[list[dict], int]:
+    try:
+        j = json.loads(txt)
+    except json.JSONDecodeError as e:
+        raise Bloqueado(f"Paris: respuesta no es JSON ({txt[:80]!r})") from e
+    res = j.get("response") or {}
+    total = int(res.get("total_num_results") or 0)
+    total_paginas = max(1, -(-min(total, 10000) // POR_PAGINA))
+    productos = []
+    for it in res.get("results") or []:
+        d = it.get("data") or {}
+        precio = d.get("displayedPrice")
+        if not precio:
             continue
-        # Inicio aproximado del objeto producto: el "slug" más cercano hacia atrás.
-        lim = max(anterior, i - 20000)
-        slug = _campo_antes(txt, i, lim, "slug")
-        nombre = _campo_antes(txt, i, lim, "name")
-        marca = _campo_antes(txt, i, lim, "brand") or ""
-        anterior = fin
-        precios = mv.get("prices") or {}
-        regular = _monto(precios, "regular")
-        oferta = _monto(precios, "offer")
-        tarjeta = _monto(precios, "paymentMethod")
-        precio = oferta or regular
-        if not (slug and nombre and precio):
+        precio = int(precio)
+        pid = str(d.get("id") or "")
+        if not pid:
             continue
-        sku = str(mv.get("sku") or mv.get("id") or slug).split("-")[0]
-        if sku in vistos:
-            continue
-        vistos.add(sku)
-        lista = regular if regular and regular > precio else None
-        if tarjeta and tarjeta >= precio:
-            tarjeta = None
-        imgs = mv.get("images") or []
-        img = imgs[0].get("url") if imgs and isinstance(imgs[0], dict) else None
-        if img:
-            img = img.replace("792x1068", "384x0")
+        url = d.get("url") or f"https://www.paris.cl/{d.get('slug')}.html"
+        url = url.replace("https://paris.cl/", "https://www.paris.cl/")
+        grupos = [g.get("display_name") for g in d.get("groups") or [] if g.get("display_name")]
+        vendedores = d.get("sellers") or []
         productos.append({
-            "id": f"paris:{sku}",
+            "id": f"paris:{pid}",
             "tienda": "paris",
-            "sku": sku,
-            "nombre": nombre.replace('\\"', '"').strip(),
-            "marca": marca.strip(),
-            "url": f"{BASE}/{slug}.html",
-            "img": img,
+            "sku": pid,
+            "nombre": (it.get("value") or "").strip(),
+            "marca": (d.get("brand") or "").strip(),
+            "url": url,
+            "img": (d.get("image_url") or "").replace("792x1068", "384x0") or None,
             "precio": precio,
-            "precio_tarjeta": tarjeta,
-            "precio_lista": lista,
-            "vendedor": None,
-            "categoria": categoria,
+            "precio_tarjeta": None,
+            "precio_lista": _lista(precio, d.get("discountPercentage")),
+            "vendedor": vendedores[0] if vendedores and vendedores[0].lower() != "paris" else None,
+            "categoria": (grupos[0] if grupos else categoria_defecto).lower(),
         })
-    return productos
+    return productos, total_paginas
 
 
-def pagina(cli: Cliente, ruta: str) -> list[dict]:
-    partes = [p for p in ruta.strip("/").split("/") if p]
-    cat = (partes[-1] if partes else ruta).replace("-", " ")
-    return parsear(cli.get(BASE + ruta), cat)
+def pagina(cli: Cliente, grupo: str, n: int, orden: str | None = None) -> tuple[list[dict], int]:
+    q = {
+        "key": CLAVE, "c": "ciojs-client-2.66.0", "i": "cazaofertas", "s": "1",
+        "page": n, "num_results_per_page": POR_PAGINA,
+    }
+    if orden == "descuento":
+        q.update(sort_by="best-discount", sort_order="descending")
+    url = API.format(grupo=urllib.parse.quote(grupo)) + "?" + urllib.parse.urlencode(q)
+    return parsear(cli.get(url), grupo)

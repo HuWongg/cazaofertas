@@ -94,14 +94,26 @@ def recolectar(tienda: str, corrida: int, estado: dict, rapido: bool) -> tuple[l
                     if n >= tot:
                         break
     elif tienda == "paris":
-        cats = _rotar(config.PARIS_CATEGORIAS, corrida * config.PARIS_CATEGORIAS_POR_CORRIDA)
-        cats = cats[: (2 if rapido else config.PARIS_CATEGORIAS_POR_CORRIDA)]
-        for ruta in cats:
-            if time.time() > limite or bloqueos >= 6:
-                break
-            r = intento(lambda: paris.pagina(cli, ruta), ruta)
-            if r:
-                productos += r
+        deps = _rotar(config.PARIS_DEPARTAMENTOS, corrida)
+        if rapido:
+            deps = deps[:2]
+        # 1) Lo más rebajado de cada departamento (donde aparecen los errores de precio).
+        for grupo, _ in deps:
+            for n in range(1, (1 if rapido else config.PARIS_PAGINAS_DESCUENTO) + 1):
+                if time.time() > limite or bloqueos >= 6:
+                    break
+                r = intento(lambda: paris.pagina(cli, grupo, n, "descuento"), f"{grupo} desc p{n}")
+                if r:
+                    productos += r[0]
+                    conocidas[f"par:{grupo}"] = r[1]
+        # 2) Recorrido normal (rotativo) para tener historial y comparar entre tiendas.
+        for grupo, maxp in deps:
+            for n in _paginas(f"par:{grupo}", maxp, corrida, conocidas, rapido):
+                if time.time() > limite or bloqueos >= 6:
+                    break
+                r = intento(lambda: paris.pagina(cli, grupo, n), f"{grupo} p{n}")
+                if r:
+                    productos += r[0]
 
     # Sin duplicados dentro de la misma corrida.
     unicos = {p["id"]: p for p in productos}
