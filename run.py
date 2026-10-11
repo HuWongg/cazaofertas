@@ -164,6 +164,12 @@ def main() -> None:
 
     borrados = datos.podar(catalogo, ahora)
     ofertas = detectar(catalogo, vistos, ahora)
+    # Las que solo tienen el descuento "declarado" por la tienda son muchísimas y poco
+    # confiables: se guardan solo las 400 mayores (con precio normal ≥ $10.000).
+    confirmadas = [o for o in ofertas if o["confianza"] != "baja"]
+    declaradas = sorted((o for o in ofertas if o["confianza"] == "baja" and (o.get("precio_lista") or 0) >= 10_000),
+                        key=lambda o: -(o.get("desc_declarado") or 0))[:400]
+    ofertas = confirmadas + declaradas
 
     # Recordar desde cuándo se ve cada oferta (para marcar las nuevas).
     desde = estado.setdefault("ofertas_desde", {})

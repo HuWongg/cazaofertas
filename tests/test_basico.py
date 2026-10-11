@@ -97,7 +97,7 @@ def test_deteccion_entre_tiendas():
     o = ids.get("falabella:17482518")
     assert o, f"no detectó la oferta cruzada: {ofertas}"
     assert "entre_tiendas" in o["tipos"] and o["confianza"] == "alta", o
-    assert round(o["desc_cruzado"], 2) == round(1 - 419990 / 1024990, 2)
+    assert round(o["desc_cruzado"], 2) == round(1 - 419990 / 999990, 2)
     # Las publicaciones caras no son oferta.
     assert "ripley:26439997" not in ids and "paris:MKBP2R9WS0" not in ids
 

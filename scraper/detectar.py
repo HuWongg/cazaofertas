@@ -9,11 +9,11 @@ import statistics
 
 from . import config
 from .datos import hoy
-from .matching import agrupar, es_accesorio, jaccard
+from .matching import agrupar, conflicto, es_accesorio, jaccard
 
 
 def _referencia_cruzada(p: dict, grupos_de: dict, ahora: float):
-    """Precio de referencia = mediana de las OTRAS publicaciones del mismo producto."""
+    """Precio de referencia = el más barato de las OTRAS publicaciones del mismo producto."""
     vigencia = ahora - config.HORAS_VIGENCIA_PRECIO * 3600
     otros: dict[str, tuple[dict, str]] = {}
     for clave, miembros in grupos_de.get(p["id"], []):
@@ -25,6 +25,8 @@ def _referencia_cruzada(p: dict, grupos_de: dict, ahora: float):
                 continue
             if es_accesorio(p["nombre"]) != es_accesorio(o["nombre"]):
                 continue
+            if conflicto(p["nombre"], o["nombre"]):
+                continue
             sim = jaccard(p["nombre"], o["nombre"])
             # Códigos cortos (p.ej. "15IRH8") pueden ser de una familia y no de un modelo exacto.
             minimo = (0.25 if len(clave.rsplit(":", 1)[-1]) >= 7 else 0.45) if fuerte else 0.6
@@ -34,7 +36,9 @@ def _referencia_cruzada(p: dict, grupos_de: dict, ahora: float):
     if not otros:
         return None, [], None
     precios = [o["precio"] for o, _ in otros.values()]
-    ref = statistics.median(precios)
+    # Referencia conservadora: la publicación MÁS BARATA de las demás.
+    # Así, si otra tienda también lo vende barato, no se marca como error.
+    ref = min(precios)
     # Si hay un solo comparado, exigimos que el emparejamiento sea por código.
     tipos = {t for _, t in otros.values()}
     comparados = sorted(otros.values(), key=lambda x: x[0]["precio"])

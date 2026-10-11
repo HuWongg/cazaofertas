@@ -14,7 +14,8 @@ from collections import Counter, defaultdict
 # Patrones de "especificaciones" que se repiten en muchos productos y NO identifican un modelo.
 _GENERICO = re.compile(
     r"^("
-    r"\d+(GB|TB|MB|HZ|W|WH|MAH|MM|CM|ML|KG|GR|G|PULG|MP|K|V|LT|L|LTS|BTU|RPM|NITS|MS|P|FPS|X)"
+    r"\d+(?:[A-Z]{1,6})"          # número + unidad: 128GB, 2666MHZ, 200MBS, 45CM...
+    r"|\d+X\d+[A-Z]*"              # medidas: 45X45CM, 150X200
     r"|(RTX|GTX|RX|GT|MX|RTX\d*TI|ARC)\d+[A-Z]*"
     r"|I[3579]\d*[A-Z]*|R[3579]|RYZEN\d*|CORE\d*|ULTRA\d*|M[1-5](PRO|MAX)?"
     r"|DDR\d+[A-Z]*|LPDDR\d+[A-Z]*|GEN\d+|USB\d*[A-Z]*|WIFI\d*[A-Z]*|BT\d*|5G|4G|LTE|NFC"
@@ -84,9 +85,59 @@ def huella(nombre: str, marca: str) -> str | None:
         return None
     ps = sorted({p for p in palabras(nombre)
                  if p not in _STOP and p not in palabras(marca) and (len(p) > 1 or p.isdigit())})
-    if len(ps) < 3:
+    if len(ps) < 4:
         return None
     return m + "|" + " ".join(ps)
+
+
+_RE_CAP = re.compile(r"(\d+(?:[.,]\d+)?)\s?(gb|tb)\b")
+_RE_PULG = re.compile(r"(?:^|\s)(\d{2,3}(?:[.,]\d)?)\s?(?:\"|”|''|'|pulgadas|pulg\b|in\b)")
+_RE_TV = re.compile(r"(?:^|\b(?:tv|televisor|led|qled|oled|qned|monitor)\s)(\d{2,3})\b")
+_RE_LITROS = re.compile(r"(\d+(?:[.,]\d+)?)\s?(?:l|lt|lts|litros?)\b")
+_RE_DIM = re.compile(r"(\d{2,3})\s?x\s?(\d{2,3})")
+_RE_PLAZAS = re.compile(r"(1|1[.,]5|2|king|super king)\s?plazas?")
+_RE_PACK = re.compile(r"(?:pack|set|kit|combo)\s?(?:de\s)?x?\s?(\d{1,2})\b|\bx\s?(\d)\b|\b(\d)\s?x\b|\b(\d)\s?(?:unidades|uds|un)\b")
+
+
+def specs(nombre: str) -> dict[str, set]:
+    """Especificaciones que distinguen variantes: capacidad, pulgadas, litros, medidas, plazas, pack."""
+    t = normalizar(re.sub(r"[”“″]", '"', nombre or "").replace("’", "'"))
+    out: dict[str, set] = {}
+    caps = []
+    for n, u in _RE_CAP.findall(t):
+        v = float(n.replace(",", "."))
+        caps.append(v * 1024 if u == "tb" else v)
+    if caps:
+        out["cap"] = {max(caps)}
+    pul = {int(float(x.replace(",", "."))) for x in _RE_PULG.findall(t)}
+    pul |= {int(x) for x in _RE_TV.findall(t) if 19 <= int(x) <= 120}
+    if pul:
+        out["pulg"] = pul
+    lit = {float(x.replace(",", ".")) for x in _RE_LITROS.findall(t)}
+    if lit:
+        out["lit"] = lit
+    dim = {tuple(sorted(d)) for d in _RE_DIM.findall(t)}
+    if dim:
+        out["dim"] = dim
+    pla = {x.replace(",", ".") for x in _RE_PLAZAS.findall(t)}
+    if pla:
+        out["plazas"] = pla
+    packs = {int(g) for m in _RE_PACK.findall(t) for g in m if g}
+    if packs and max(packs) > 1:
+        out["pack"] = {max(packs)}
+    return out
+
+
+def conflicto(a: str, b: str) -> bool:
+    """True si los nombres indican variantes distintas (p.ej. 128GB vs 256GB, 55" vs 65")."""
+    sa, sb = specs(a), specs(b)
+    for k in sa.keys() & sb.keys():
+        if not (sa[k] & sb[k]):
+            return True
+    # Un "pack" en uno y no en el otro también es distinto.
+    if ("pack" in sa) != ("pack" in sb):
+        return True
+    return False
 
 
 def jaccard(a: str, b: str) -> float:
