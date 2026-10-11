@@ -9,6 +9,10 @@ on:
         description: "Prueba rápida (pocas páginas, sin alertas)"
         type: boolean
         default: false
+      diag:
+        description: "Diagnóstico de conexión con las tiendas"
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths: ["web/**"]   # si cambia la web, se republica
@@ -64,6 +68,9 @@ jobs:
             mkdir -p site/data
             cp data/sitio-ofertas.json site/data/ofertas.json 2>/dev/null || echo '{"generado":0,"ofertas":[]}' > site/data/ofertas.json
             cp data/sitio-estado.json site/data/estado.json 2>/dev/null || echo '{"generado":0,"corrida":0,"catalogo":0,"tiendas":{}}' > site/data/estado.json
+          elif [ "${{ inputs.diag }}" = "true" ]; then
+            python diag.py
+            python run.py --rapido --sin-alertas
           elif [ "${{ inputs.rapido }}" = "true" ]; then
             python run.py --rapido --sin-alertas
           else
