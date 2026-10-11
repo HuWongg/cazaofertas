@@ -19,6 +19,9 @@ HEADERS = {
 }
 
 
+IDENTIDADES = ["chrome", "safari", "firefox", "edge", "chrome_android"]
+
+
 class Bloqueado(Exception):
     """La tienda respondió con un bloqueo o una página que no es de productos."""
 
@@ -37,6 +40,11 @@ class Cliente:
         if falta > 0:
             time.sleep(falta)
 
+    def _rotar_identidad(self) -> None:
+        """Cambia la huella de navegador (y reinicia cookies) tras un bloqueo."""
+        self._idx = (getattr(self, "_idx", 0) + 1) % len(IDENTIDADES)
+        self.s = creq.Session(impersonate=IDENTIDADES[self._idx], headers=HEADERS, timeout=40)
+
     def get(self, url: str, intentos: int = 3) -> str:
         ultimo_error: Exception | None = None
         for n in range(intentos):
@@ -46,7 +54,9 @@ class Cliente:
             try:
                 r = self.s.get(url, allow_redirects=True)
                 if r.status_code in (403, 429, 503):
-                    ultimo_error = Bloqueado(f"HTTP {r.status_code} en {url}")
+                    srv = r.headers.get("server", "?")
+                    ultimo_error = Bloqueado(f"HTTP {r.status_code} ({srv}) en {url}")
+                    self._rotar_identidad()
                     time.sleep(4 * (n + 1))
                     continue
                 if r.status_code == 404:
