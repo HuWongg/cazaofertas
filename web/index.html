@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cazaofertas</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-in">
+    <div class="brand">
+      <span class="logo">🎯</span>
+      <div>
+        <h1>Cazaofertas</h1>
+        <p class="sub" id="actualizado">Cargando…</p>
+      </div>
+    </div>
+    <div class="tiendas-estado" id="tiendasEstado"></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="filtros" aria-label="Filtros">
+    <div class="fila">
+      <input id="buscar" type="search" placeholder="Buscar producto, marca o modelo…" autocomplete="off">
+      <select id="orden" aria-label="Ordenar">
+        <option value="desc">Mayor descuento</option>
+        <option value="nuevo">Más recientes</option>
+        <option value="ahorro">Mayor ahorro en $</option>
+        <option value="precio">Menor precio</option>
+      </select>
+    </div>
+    <div class="fila chips">
+      <span class="etq">Tiendas</span>
+      <button class="chip on" data-tienda="falabella"><i class="dot falabella"></i>Falabella</button>
+      <button class="chip on" data-tienda="ripley"><i class="dot ripley"></i>Ripley</button>
+      <button class="chip on" data-tienda="paris"><i class="dot paris"></i>Paris</button>
+    </div>
+    <div class="fila chips">
+      <span class="etq">Detectado</span>
+      <button class="chip on" data-tipo="entre_tiendas" title="Más barato que el mismo producto en otras publicaciones">Entre tiendas</button>
+      <button class="chip on" data-tipo="historial" title="Más barato que su propio precio de los últimos días">Bajo su historial</button>
+      <button class="chip" data-tipo="declarado" title="Solo el descuento que anuncia la tienda (menos confiable)">Según la tienda</button>
+    </div>
+    <div class="fila">
+      <label class="rango">
+        <span>Descuento mínimo <b id="minDescTxt">50%</b></span>
+        <input id="minDesc" type="range" min="50" max="90" step="5" value="50">
+      </label>
+      <select id="categoria" aria-label="Categoría"><option value="">Todas las categorías</option></select>
+      <label class="check"><input id="soloNuevas" type="checkbox"> Solo nuevas (24 h)</label>
+    </div>
+  </section>
+
+  <p class="resumen" id="resumen"></p>
+  <section class="grilla" id="grilla" aria-live="polite"></section>
+  <div class="vacio" id="vacio" hidden>
+    <div class="vacio-ico">🔎</div>
+    <h2>Nada por ahora</h2>
+    <p>No hay ofertas que cumplan estos filtros. Los errores de precio son raros y duran poco; el sistema revisa las tiendas cada hora.</p>
+  </div>
+
+  <details class="ayuda">
+    <summary>¿Cómo funciona?</summary>
+    <ul>
+      <li><b>Entre tiendas:</b> el mismo producto (mismo código de modelo o mismo nombre y marca) está al menos un 50% más caro en otras publicaciones de Falabella, Ripley o Paris.</li>
+      <li><b>Bajo su historial:</b> el producto cuesta al menos 50% menos que su precio habitual de los días anteriores.</li>
+      <li><b>Según la tienda:</b> solo el "precio normal" tachado que muestra la tienda. A veces está inflado, por eso viene apagado.</li>
+      <li><b>Confianza alta</b> = lo confirman varias publicaciones o ambos métodos. Igual revisa antes de comprar: las tiendas a veces anulan compras por error de precio.</li>
+    </ul>
+  </details>
+</main>
+
+<footer class="wrap pie" id="pie"></footer>
+
+<template id="tplCard">
+  <article class="card">
+    <a class="img" target="_blank" rel="noopener"><img loading="lazy" alt=""></a>
+    <div class="cuerpo">
+      <div class="meta">
+        <span class="tienda"></span>
+        <span class="conf"></span>
+        <span class="nuevo" hidden>Nuevo</span>
+      </div>
+      <h3 class="nombre"></h3>
+      <div class="precios">
+        <span class="badge"></span>
+        <div>
+          <div class="ahora"></div>
+          <div class="antes"></div>
+        </div>
+      </div>
+      <div class="tarjeta"></div>
+      <svg class="spark" viewBox="0 0 120 28" preserveAspectRatio="none" aria-hidden="true"></svg>
+      <details class="comparar" hidden>
+        <summary></summary>
+        <ul></ul>
+      </details>
+      <div class="acciones">
+        <a class="ir" target="_blank" rel="noopener">Ver en la tienda →</a>
+        <span class="visto"></span>
+      </div>
+    </div>
+  </article>
+</template>
+
+<script src="app.js"></script>
+</body>
+</html>
