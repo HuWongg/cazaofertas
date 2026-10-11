@@ -72,22 +72,21 @@ FALABELLA_CATEGORIAS = [
 ]
 
 # ---------------------------------------------------------------- Ripley
-# (ruta, páginas máximas)
+# (código de catálogo de Ripley, páginas máximas de 50 productos)
+# El código aparece en la web de Ripley; p.ej. /tecno/computacion/notebooks = "note_books".
 RIPLEY_CATEGORIAS = [
-    ("/tecno/computacion/notebooks", 16),
-    ("/tecno/computacion/tablets", 5),
-    ("/tecno/computacion/monitores", 8),
-    ("/tecno/celulares", 30),
-    ("/tecno/television", 20),
-    ("/tecno/audio-y-musica", 30),
-    ("/tecno/playstation", 15),
-    ("/tecno/nintendo", 15),
-    ("/tecno/xbox", 4),
-    ("/electro/refrigeracion", 8),
-    ("/electro/electrodomesticos", 20),
-    ("/electro/climatizacion", 10),
-    ("/zapatos-y-zapatillas/zapatillas", 40),
-    ("/deporte-y-aventura", 30),
+    ("note_books", 16),
+    ("comput_acion", 40),
+    ("celulares_tecno", 40),
+    ("tele_vision", 30),
+    ("audio_musica", 30),
+    ("NO*vj_playstation", 18),
+    ("NO*vj_nintendo", 20),
+    ("prepa_alimentos_e", 30),
+    ("electro_e", 40),
+    ("zapatos_zapatillas", 40),
+    ("deporte_aventura", 40),
+    ("tecno", 40),
 ]
 
 # ---------------------------------------------------------------- Paris

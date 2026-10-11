@@ -45,22 +45,22 @@ class Cliente:
         self._idx = (getattr(self, "_idx", 0) + 1) % len(IDENTIDADES)
         self.s = creq.Session(impersonate=IDENTIDADES[self._idx], headers=HEADERS, timeout=40)
 
-    def get(self, url: str, intentos: int = 3) -> str:
+    def get(self, url: str, intentos: int = 3, headers: dict | None = None) -> str:
         ultimo_error: Exception | None = None
         for n in range(intentos):
             self._pausa()
             self._ultimo = time.time()
             self.peticiones += 1
             try:
-                r = self.s.get(url, allow_redirects=True)
+                r = self.s.get(url, allow_redirects=True, headers=headers)
                 if r.status_code in (403, 429, 503):
                     srv = r.headers.get("server", "?")
                     ultimo_error = Bloqueado(f"HTTP {r.status_code} ({srv}) en {url}")
                     self._rotar_identidad()
                     time.sleep(4 * (n + 1))
                     continue
-                if r.status_code == 404:
-                    raise Bloqueado(f"HTTP 404 en {url}")
+                if r.status_code in (400, 401, 404):
+                    raise Bloqueado(f"HTTP {r.status_code} en {url}: {r.text[:120]}")
                 r.raise_for_status()
                 return r.text
             except Bloqueado:
