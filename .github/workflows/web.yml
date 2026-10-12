@@ -1,0 +1,44 @@
+name: Publicar web
+
+# Republica la página cuando cambia la carpeta web/ (sin esperar al monitoreo).
+on:
+  push:
+    branches: [main]
+    paths: ["web/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Armar sitio con los últimos datos
+        run: |
+          mkdir -p site/data
+          cp -r web/. site/
+          if git ls-remote --exit-code --heads origin web-datos >/dev/null; then
+            git fetch --depth 1 origin web-datos
+            git show origin/web-datos:ofertas.json > site/data/ofertas.json
+            git show origin/web-datos:estado.json > site/data/estado.json
+          else
+            echo '{"generado":0,"ofertas":[]}' > site/data/ofertas.json
+            echo '{"generado":0,"catalogo":0,"tiendas":{}}' > site/data/estado.json
+          fi
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4

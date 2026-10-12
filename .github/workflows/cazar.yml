@@ -1,21 +1,16 @@
 name: Cazar ofertas
 
+# Monitoreo continuo: cada ejecución vigila las tiendas sin parar durante ~5,5 horas
+# (un ciclo cada ~3 minutos). El cron solo sirve para encadenar la siguiente:
+# si ya hay una corriendo, la nueva queda en espera y parte apenas termina la anterior.
 on:
   schedule:
-    - cron: "7 * * * *"   # cada hora, al minuto 7
+    - cron: "*/20 * * * *"
   workflow_dispatch:
     inputs:
-      rapido:
-        description: "Prueba rápida (pocas páginas, sin alertas)"
-        type: boolean
-        default: false
-      diag:
-        description: "Diagnóstico de conexión con las tiendas"
-        type: boolean
-        default: false
-  push:
-    branches: [main]
-    paths: ["web/**"]   # si cambia la web, se republica
+      minutos:
+        description: "Minutos de monitoreo"
+        default: "335"
 
 permissions:
   contents: write
@@ -30,7 +25,7 @@ concurrency:
 jobs:
   cazar:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 355
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
@@ -47,53 +42,18 @@ jobs:
 
       - name: Recuperar datos anteriores (rama "datos")
         run: |
-          mkdir -p data
+          mkdir -p data site/data
           if git ls-remote --exit-code --heads origin datos >/dev/null; then
             git fetch --depth 1 origin datos
             git --work-tree=data checkout origin/datos -- .
             git reset -q
           fi
+          cp data/sitio-ofertas.json site/data/ofertas.json 2>/dev/null || echo '{"generado":0,"ofertas":[]}' > site/data/ofertas.json
+          cp data/sitio-estado.json site/data/estado.json 2>/dev/null || echo '{"generado":0,"catalogo":0,"tiendas":{}}' > site/data/estado.json
           ls -la data
 
-      - name: Recolectar y detectar
-        env:
-          CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
-          CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          SITIO_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
-        run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
-            echo "Solo republicar la web"
-            mkdir -p site/data
-            cp data/sitio-ofertas.json site/data/ofertas.json 2>/dev/null || echo '{"generado":0,"ofertas":[]}' > site/data/ofertas.json
-            cp data/sitio-estado.json site/data/estado.json 2>/dev/null || echo '{"generado":0,"corrida":0,"catalogo":0,"tiendas":{}}' > site/data/estado.json
-          elif [ "${{ inputs.diag }}" = "true" ]; then
-            python diag.py
-            python run.py --rapido --sin-alertas
-          elif [ "${{ inputs.rapido }}" = "true" ]; then
-            python run.py --rapido --sin-alertas
-          else
-            python run.py
-          fi
-
-      - name: Guardar datos en la rama "datos"
-        if: github.event_name != 'push'
-        run: |
-          cp site/data/ofertas.json data/sitio-ofertas.json
-          cp site/data/estado.json data/sitio-estado.json
-          cd data
-          git init -q -b datos
-          git config user.name "cazaofertas-bot"
-          git config user.email "cazaofertas-bot@users.noreply.github.com"
-          git add -A
-          git commit -q -m "datos $(date -u +%FT%TZ)"
-          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" datos
-        # Se fuerza un solo commit para que el repo no crezca con cada ejecución.
-
-      - name: Armar sitio
+      - name: Publicar la página
         run: cp -r web/. site/
-
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -101,8 +61,17 @@ jobs:
       - id: deploy
         uses: actions/deploy-pages@v4
 
+      - name: Monitorear (bucle continuo)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
+          CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          SITIO_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+        run: python -u run.py --minutos "${{ inputs.minutos || '335' }}"
+
       - name: Mantener activa la programación
-        # GitHub pausa los cron de repos sin actividad por 60 días; esto la reactiva.
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}

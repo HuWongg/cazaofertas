@@ -44,9 +44,11 @@
     </div>
     <div class="fila chips">
       <span class="etq">Detectado</span>
-      <button class="chip on" data-tipo="entre_tiendas" title="Más barato que el mismo producto en otras publicaciones">Entre tiendas</button>
+      <button class="chip on" data-tipo="externo" title="SoloTodo confirma: otras tiendas lo venden al doble o más, o su precio habitual es el doble">Confirmado en SoloTodo</button>
+      <button class="chip on" data-tipo="entre_tiendas" title="Más barato que el mismo producto en otra tienda (Falabella, Ripley o Paris)">Entre tiendas</button>
+      <button class="chip on" data-tipo="caida" title="Lo vimos al doble de precio hace poco y bajó de golpe">Bajó de golpe</button>
       <button class="chip on" data-tipo="historial" title="Más barato que su propio precio de los últimos días">Bajo su historial</button>
-      <button class="chip" data-tipo="declarado" title="Solo el descuento que anuncia la tienda (menos confiable)">Según la tienda</button>
+      <button class="chip" data-tipo="declarado" title="Solo el descuento que anuncia la tienda, sin verificar">Según la tienda</button>
     </div>
     <div class="fila">
       <label class="rango">
@@ -55,6 +57,7 @@
       </label>
       <select id="categoria" aria-label="Categoría"><option value="">Todas las categorías</option></select>
       <label class="check"><input id="soloNuevas" type="checkbox"> Solo nuevas (24 h)</label>
+      <label class="check" title="Descuentos que la tienda anuncia pero SoloTodo desmiente"><input id="verFalsos" type="checkbox"> Ver descuentos falsos</label>
     </div>
   </section>
 
@@ -69,10 +72,12 @@
   <details class="ayuda">
     <summary>¿Cómo funciona?</summary>
     <ul>
-      <li><b>Entre tiendas:</b> el mismo producto (mismo código de modelo o mismo nombre y marca) cuesta al menos el doble en todas las demás publicaciones de Falabella, Ripley o Paris. Se ignoran variantes distintas (128GB vs 256GB, 55" vs 65", etc.).</li>
-      <li><b>Bajo su historial:</b> el producto cuesta al menos 50% menos que su precio habitual de los días anteriores.</li>
-      <li><b>Según la tienda:</b> solo el "precio normal" tachado que muestra la tienda. A veces está inflado, por eso viene apagado.</li>
-      <li><b>Confianza alta</b> = lo confirman varias publicaciones o ambos métodos. Igual revisa antes de comprar: las tiendas a veces anulan compras por error de precio.</li>
+      <li><b>Monitoreo continuo:</b> cada ~3 minutos se revisan las páginas más rebajadas y se avanza en un barrido completo de las tiendas. Los datos de esta página se refrescan solos.</li>
+      <li><b>Confirmado en SoloTodo:</b> SoloTodo registra precios de cientos de tiendas chilenas y su historial. Si otras tiendas lo venden al doble o más, o su precio habitual de los últimos 45 días es el doble o más, se confirma.</li>
+      <li><b>Entre tiendas:</b> el mismo producto (mismo código de modelo, o mismo nombre y marca) cuesta al menos el doble en otra tienda. Nunca se compara contra la misma tienda, y se descartan variantes (128GB vs 256GB, 55" vs 65", niño vs adulto).</li>
+      <li><b>Bajó de golpe:</b> lo vimos a más del doble hace menos de 48 horas.</li>
+      <li><b>Según la tienda:</b> solo el "precio normal" tachado; viene apagado porque suele estar inflado. Si SoloTodo lo desmiente, se marca como <i>descuento falso</i>.</li>
+      <li><b>Error probable</b> = confirmado por una fuente externa o por varias señales. Igual revisa antes de comprar: las tiendas a veces anulan compras por error de precio.</li>
     </ul>
   </details>
 </main>

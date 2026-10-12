@@ -118,3 +118,27 @@ if __name__ == "__main__":
         if nombre.startswith("test_"):
             fn()
             print("ok", nombre)
+
+
+def test_caida_y_externo():
+    cat = {}
+    t0 = time.time() - 3600
+    prod = {"id": "paris:X1", "tienda": "paris", "nombre": "Smart TV Samsung 65 QN65QN900FGXZS", "marca": "Samsung",
+            "url": "u", "precio": 1399990, "categoria": "tv"}
+    datos.registrar(cat, prod, t0)
+    datos.registrar(cat, {**prod, "precio": 299990}, time.time())
+    ext = {"pid": 1, "url": "s", "otras": [{"tienda": "Lider", "precio": 999990}],
+           "ref_tiendas": 999990, "ref_historial": 1199990, "min_historial": 979990}
+    o = detectar(cat, {"paris:X1"}, time.time(), {"paris:X1": ext})[0]
+    assert set(o["tipos"]) >= {"caida", "externo"} and o["confianza"] == "alta", o
+    # SoloTodo desmiente un descuento solo "declarado".
+    cat2 = {}
+    p2 = {**prod, "id": "paris:X2", "precio": 949990, "precio_lista": 2999990}
+    datos.registrar(cat2, p2, time.time())
+    o2 = detectar(cat2, {"paris:X2"}, time.time(), {"paris:X2": ext})[0]
+    assert o2["confianza"] == "falso", o2
+
+
+if __name__ == "__main__":
+    test_caida_y_externo()
+    print("ok test_caida_y_externo")

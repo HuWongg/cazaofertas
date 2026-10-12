@@ -23,15 +23,24 @@ def _clp(n) -> str:
 
 
 def texto(o: dict, sitio: str | None) -> str:
-    lineas = [f"🔥 -{round(o['descuento'] * 100)}% en {NOMBRES.get(o['tienda'], o['tienda'])}",
+    marca = "🚨 POSIBLE ERROR DE PRECIO" if o["confianza"] == "alta" else "🔥 Posible error"
+    lineas = [f"{marca}: -{round(o['descuento'] * 100)}% en {NOMBRES.get(o['tienda'], o['tienda'])}",
               o["nombre"][:110],
               f"Ahora: {_clp(o['precio'])}"]
     if o.get("ref_cruzada") and "entre_tiendas" in o["tipos"]:
         otra = o["comparados"][0] if o["comparados"] else None
         extra = f" (ej. {NOMBRES.get(otra['tienda'], otra['tienda'])} {_clp(otra['precio'])})" if otra else ""
         lineas.append(f"En otras publicaciones: {_clp(o['ref_cruzada'])}{extra}")
+    if o.get("precio_anterior") and "caida" in o["tipos"]:
+        lineas.append(f"Hace poco costaba: {_clp(o['precio_anterior'])}")
     if o.get("ref_historial") and "historial" in o["tipos"]:
         lineas.append(f"Su precio habitual: {_clp(o['ref_historial'])}")
+    ext = o.get("externo") or {}
+    if ext.get("ref_tiendas"):
+        t0 = ext["otras"][0]["tienda"] if ext.get("otras") else ""
+        lineas.append(f"SoloTodo: otras tiendas desde {_clp(ext['ref_tiendas'])} ({t0})")
+    if ext.get("ref_historial"):
+        lineas.append(f"SoloTodo: precio habitual {_clp(ext['ref_historial'])}")
     lineas.append(o["url"])
     if sitio:
         lineas.append(f"Panel: {sitio}")
@@ -89,9 +98,11 @@ def procesar(ofertas: list[dict], estado: dict, ahora: float) -> int:
     for o in ofertas:
         if n >= config.MAX_ALERTAS_POR_CORRIDA:
             break
-        if o["confianza"] == "baja" or o["descuento"] < config.UMBRAL_ALERTA:
+        if o["confianza"] not in ("alta", "media") or o["descuento"] < config.UMBRAL_ALERTA:
             continue
-        ref = o.get("ref_cruzada") or o.get("ref_historial") or 0
+        ext = o.get("externo") or {}
+        ref = max(o.get("ref_cruzada") or 0, o.get("ref_historial") or 0, o.get("precio_anterior") or 0,
+                  ext.get("ref_tiendas") or 0, ext.get("ref_historial") or 0)
         if ref < config.REFERENCIA_MINIMA_ALERTA:
             continue
         previo = enviados.get(o["id"])

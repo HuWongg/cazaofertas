@@ -7,8 +7,26 @@ Para agregar o quitar categorías, edita las listas de abajo.
 # Descuento mínimo (0.5 = 50%) para que algo cuente como oferta.
 UMBRAL_DESCUENTO = 0.50
 
-# Descuento mínimo para mandar alerta al celular (más estricto para no spamear).
-UMBRAL_ALERTA = 0.55
+# Descuento mínimo para mandar alerta al celular.
+UMBRAL_ALERTA = 0.50
+
+# Ofertas que SOLO tienen el descuento declarado por la tienda se verifican en SoloTodo
+# si ese descuento declarado es al menos esto.
+UMBRAL_VERIFICAR_DECLARADO = 0.60
+
+# Consultas a SoloTodo por ciclo (cada una son ~2 peticiones; los resultados se guardan en caché).
+VERIFICACIONES_POR_CICLO = 25
+
+# ---------------------------------------------------------------- Monitoreo continuo
+# Segundos de recolección por ciclo (las 3 tiendas en paralelo). Tras cada ciclo se detecta,
+# se verifica, se avisa y se actualiza la web. Un ciclo completo dura ~3-4 minutos.
+SEGUNDOS_POR_CICLO = 150
+
+# Cada cuántos minutos se respalda el catálogo completo (historial) en GitHub.
+MINUTOS_RESPALDO = 15
+
+# Productos vistos en estas últimas horas se consideran vigentes para el panel.
+HORAS_VIGENTE = 3
 
 # No alertar productos cuyo precio de referencia sea menor a esto (CLP).
 REFERENCIA_MINIMA_ALERTA = 15_000
@@ -26,15 +44,10 @@ DIAS_MINIMOS_HISTORIAL = 3
 HORAS_VIGENCIA_PRECIO = 72
 
 # Tiempo máximo por tienda en cada ejecución (segundos).
-PRESUPUESTO_SEGUNDOS_POR_TIENDA = 6 * 60
 
 # Pausa entre peticiones a una misma tienda (segundos, se agrega azar).
 PAUSA_ENTRE_PETICIONES = 1.2
 
-# Páginas "fijas" que se revisan siempre por categoría (las primeras),
-# más algunas páginas profundas que van rotando en cada ejecución.
-PAGINAS_FIJAS = 2
-PAGINAS_ROTATIVAS = 2
 
 # ---------------------------------------------------------------- Falabella
 # (id de categoría, nombre en la URL, páginas máximas a recorrer)

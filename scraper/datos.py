@@ -51,6 +51,9 @@ def registrar(cat: dict, p: dict, ahora: float) -> None:
     e = cat.get(p["id"])
     if e is None:
         e = cat[p["id"]] = {"h": []}
+    # Guardar el precio anterior cuando cambia (para detectar caídas bruscas).
+    if e.get("p") and e["p"] != p["precio"]:
+        e["pp"], e["pc"] = e["p"], int(ahora)
     e.update({
         "n": p["nombre"], "m": p.get("marca") or "", "t": p["tienda"], "u": p["url"],
         "i": p.get("img"), "c": p.get("categoria"), "v": p.get("vendedor"),
@@ -85,4 +88,5 @@ def a_producto(pid: str, e: dict) -> dict:
         "img": e.get("i"), "categoria": e.get("c"), "vendedor": e.get("v"),
         "precio": e["p"], "precio_tarjeta": e.get("pt"), "precio_lista": e.get("pl"),
         "ts": e.get("ts", 0), "agotado": bool(e.get("x")),
+        "precio_anterior": e.get("pp"), "cambio_ts": e.get("pc"),
     }
