@@ -163,7 +163,10 @@ def main() -> None:
         estado_tiendas[t] = resumen
 
     borrados = datos.podar(catalogo, ahora)
-    ofertas = detectar(catalogo, vistos, ahora)
+    # Se evalúan los productos vistos en las últimas 6 horas: como las páginas profundas
+    # van rotando, así el panel muestra todo lo vigente y no solo lo de esta corrida.
+    recientes = {k for k, v in catalogo.items() if v.get("ts", 0) >= ahora - 6 * 3600}
+    ofertas = detectar(catalogo, recientes | vistos, ahora)
     # Las que solo tienen el descuento "declarado" por la tienda son muchísimas y poco
     # confiables: se guardan solo las 400 mayores (con precio normal ≥ $10.000).
     confirmadas = [o for o in ofertas if o["confianza"] != "baja"]
@@ -179,21 +182,9 @@ def main() -> None:
     for k in [k for k in desde if k not in actuales and desde[k] < ahora - 3 * 86400]:
         del desde[k]
 
-    # Ofertas vistas en corridas anteriores que no se revisaron esta vez (por rotación)
-    # se mantienen un rato en el panel si su precio sigue vigente.
-    previas = estado.get("ofertas_previas", [])
-    vigencia = ahora - 12 * 3600
-    for o in previas:
-        if o["id"] in actuales or o["id"] in vistos:
-            continue
-        e = catalogo.get(o["id"])
-        if e and e.get("ts", 0) >= vigencia and e.get("p") == o["precio"]:
-            o["revisado"] = e["ts"]
-            ofertas.append(o)
-            actuales.add(o["id"])
     for o in ofertas:
-        o.setdefault("revisado", int(ahora))
-    estado["ofertas_previas"] = ofertas
+        o["revisado"] = catalogo[o["id"]].get("ts", int(ahora))
+    estado.pop("ofertas_previas", None)
 
     enviados = 0 if args.sin_alertas else alertas.procesar(ofertas, estado, ahora)
 

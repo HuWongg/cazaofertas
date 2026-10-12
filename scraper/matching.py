@@ -29,12 +29,14 @@ _STOP = set(
     """de del la el los las y con para en sin por al a un una x
     color negro blanco gris azul rojo verde rosado rosa beige cafe plateado dorado morado
     amarillo naranjo celeste lila crema grafito plata oro negra blanca roja
-    hombre mujer unisex nino nina ninos ninas adulto infantil juvenil
+    hombre mujer unisex adulto
     nuevo nueva original oficial pack set kit
     zapatilla zapatillas running urbana urbanas deportiva deportivas
     talla tallas modelo version edicion
     """.split()
 )
+
+_NINOS = {"nino", "nina", "ninos", "ninas", "infantil", "kids", "kid", "junior", "juvenil", "bebe", "guagua"}
 
 _ACCESORIOS = set(
     """funda fundas carcasa carcasas lamina laminas protector protectores mica micas
@@ -134,7 +136,10 @@ def conflicto(a: str, b: str) -> bool:
     for k in sa.keys() & sb.keys():
         if not (sa[k] & sb[k]):
             return True
-    # Un "pack" en uno y no en el otro también es distinto.
+    # Infantil vs adulto, o "pack" en uno y no en el otro, también son distintos.
+    ka, kb = set(palabras(a)) & _NINOS, set(palabras(b)) & _NINOS
+    if bool(ka) != bool(kb):
+        return True
     if ("pack" in sa) != ("pack" in sb):
         return True
     return False
