@@ -1,0 +1,52 @@
+{
+ "generado": 1793476068,
+ "ciclo": 7225,
+ "catalogo": 226780,
+ "por_tienda": {
+  "falabella": 89799,
+  "paris": 90754,
+  "ripley": 46227
+ },
+ "tiendas": {
+  "falabella": {
+   "ok": true,
+   "productos": 4061,
+   "peticiones": 83,
+   "errores": 0,
+   "detalle_errores": [],
+   "segundos": 151,
+   "pendientes_barrido": 256,
+   "ts": 1793476068,
+   "ultimo_ok": 1793476068,
+   "barrido": 1793475970
+  },
+  "ripley": {
+   "ok": true,
+   "productos": 4498,
+   "peticiones": 89,
+   "errores": 0,
+   "detalle_errores": [],
+   "segundos": 150,
+   "pendientes_barrido": 103,
+   "ts": 1793476068,
+   "ultimo_ok": 1793476068,
+   "barrido": 1793475450
+  },
+  "paris": {
+   "ok": true,
+   "productos": 9378,
+   "peticiones": 96,
+   "errores": 0,
+   "detalle_errores": [],
+   "segundos": 151,
+   "pendientes_barrido": 24,
+   "ts": 1793476068,
+   "ultimo_ok": 1793476068,
+   "barrido": 1793475583
+  }
+ },
+ "alertas_enviadas": 0,
+ "canal_alertas": false,
+ "verificados_solotodo": 298,
+ "segundos_por_ciclo": 150
+}
